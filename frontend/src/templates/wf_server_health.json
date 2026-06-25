@@ -1,0 +1,19 @@
+{
+  "id": "wf_server_health",
+  "name": "Server Health Monitor",
+  "description": "Pings servers every 5 mins, escalates on failure: Slack → PagerDuty → email",
+  "category": "DevOps",
+  "nodes": [
+    {"id":"n1","type":"workflowNode","position":{"x":300,"y":50},"data":{"label":"Every 5 Min","type":"trigger","config":{"method":"SCHEDULE","cron":"*/5 * * * *"},"status":"idle"}},
+    {"id":"n2","type":"workflowNode","position":{"x":300,"y":160},"data":{"label":"Ping Health Endpoint","type":"action","config":{"url":"https://your-server.com/health","method":"GET"},"status":"idle"}},
+    {"id":"n3","type":"workflowNode","position":{"x":300,"y":270},"data":{"label":"Status OK?","type":"condition","config":{"field":"status","operator":"not_equals","value":"ok"},"status":"idle"}},
+    {"id":"n4","type":"workflowNode","position":{"x":300,"y":380},"data":{"label":"Slack Alert","type":"webhook","config":{"url":"https://hooks.slack.com/devops","method":"POST","body":"{\"text\":\"🔴 Server down!\"}"},"status":"idle"}},
+    {"id":"n5","type":"workflowNode","position":{"x":300,"y":490},"data":{"label":"Page On-Call","type":"webhook","config":{"url":"https://events.pagerduty.com/v2/enqueue","method":"POST","body":"{\"severity\":\"critical\"}"},"status":"idle"}}
+  ],
+  "edges": [
+    {"id":"e1","source":"n1","target":"n2"},
+    {"id":"e2","source":"n2","target":"n3"},
+    {"id":"e3","source":"n3","target":"n4","label":"Down"},
+    {"id":"e4","source":"n4","target":"n5"}
+  ]
+}

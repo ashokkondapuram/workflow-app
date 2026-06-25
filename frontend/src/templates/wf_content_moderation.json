@@ -1,0 +1,19 @@
+{
+  "id": "wf_content_moderation",
+  "name": "Content Moderation Pipeline",
+  "description": "User-submitted content is scanned by AI moderation API, flagged content quarantined and admin notified",
+  "category": "Platform",
+  "nodes": [
+    {"id":"n1","type":"workflowNode","position":{"x":300,"y":50},"data":{"label":"Content Submitted","type":"trigger","config":{"method":"POST","path":"/content/submit"},"status":"idle"}},
+    {"id":"n2","type":"workflowNode","position":{"x":300,"y":160},"data":{"label":"AI Moderation Check","type":"action","config":{"url":"https://api.openai.com/v1/moderations","method":"POST"},"status":"idle"}},
+    {"id":"n3","type":"workflowNode","position":{"x":300,"y":270},"data":{"label":"Flagged?","type":"condition","config":{"field":"flagged","operator":"equals","value":"true"},"status":"idle"}},
+    {"id":"n4","type":"workflowNode","position":{"x":150,"y":380},"data":{"label":"Approve & Publish","type":"action","config":{"url":"https://your-platform.com/content/publish","method":"POST"},"status":"idle"}},
+    {"id":"n5","type":"workflowNode","position":{"x":450,"y":380},"data":{"label":"Quarantine & Alert Admin","type":"webhook","config":{"url":"https://hooks.slack.com/admin","method":"POST","body":"{\"text\":\"⚠️ Content flagged for review\"}"},"status":"idle"}}
+  ],
+  "edges": [
+    {"id":"e1","source":"n1","target":"n2"},
+    {"id":"e2","source":"n2","target":"n3"},
+    {"id":"e3","source":"n3","target":"n4","label":"No"},
+    {"id":"e4","source":"n3","target":"n5","label":"Yes"}
+  ]
+}

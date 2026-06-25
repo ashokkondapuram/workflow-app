@@ -1,0 +1,19 @@
+{
+  "id": "wf_customer_churn",
+  "name": "Customer Churn Prevention",
+  "description": "Detects inactive customers (30+ days), triggers win-back email + CRM task for CSM",
+  "category": "Customer Success",
+  "nodes": [
+    {"id":"n1","type":"workflowNode","position":{"x":300,"y":50},"data":{"label":"Weekly Schedule","type":"trigger","config":{"method":"SCHEDULE","cron":"0 9 * * 1"},"status":"idle"}},
+    {"id":"n2","type":"workflowNode","position":{"x":300,"y":160},"data":{"label":"Fetch Inactive Users","type":"action","config":{"url":"https://your-crm.com/users/inactive?days=30","method":"GET"},"status":"idle"}},
+    {"id":"n3","type":"workflowNode","position":{"x":300,"y":270},"data":{"label":"Send Win-Back Email","type":"webhook","config":{"url":"https://your-mail.com/send","method":"POST","body":"{\"template\":\"winback\"}"},"status":"idle"}},
+    {"id":"n4","type":"workflowNode","position":{"x":300,"y":380},"data":{"label":"Create CRM Task","type":"action","config":{"url":"https://your-crm.com/tasks","method":"POST"},"status":"idle"}},
+    {"id":"n5","type":"workflowNode","position":{"x":300,"y":490},"data":{"label":"Notify CSM","type":"webhook","config":{"url":"https://hooks.slack.com/csm-channel","method":"POST","body":"{\"text\":\"At-risk customers need attention\"}"},"status":"idle"}}
+  ],
+  "edges": [
+    {"id":"e1","source":"n1","target":"n2"},
+    {"id":"e2","source":"n2","target":"n3"},
+    {"id":"e3","source":"n3","target":"n4"},
+    {"id":"e4","source":"n4","target":"n5"}
+  ]
+}
