@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Google Reviews Dashboard — A Complete Guide</title>
+<style>
+  :root {
+    --ink: #1c2433;
+    --muted: #5b6577;
+    --accent: #2f6df6;
+    --accent-dark: #1b4fd1;
+    --gold: #f5b301;
+    --bg: #f6f7fb;
+    --paper: #ffffff;
+    --line: #e4e8f0;
+    --code-bg: #0f1729;
+    --code-ink: #e6edf7;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    line-height: 1.65;
+    font-size: 18px;
+  }
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 64px 56px;
+    background: var(--paper);
+    box-shadow: 0 1px 0 var(--line);
+  }
+  .page + .page { margin-top: 18px; }
+
+  /* Cover */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: #fff;
+    background:
+      radial-gradient(120% 80% at 80% 0%, rgba(255,255,255,.18), transparent 60%),
+      linear-gradient(160deg, #1b4fd1 0%, #2f6df6 45%, #5b8def 100%);
+    text-align: left;
+    padding: 80px 64px;
+  }
+  .cover .stars { font-size: 30px; letter-spacing: 6px; color: var(--gold); }
+  .cover h1 {
+    font-size: 54px; line-height: 1.05; margin: 18px 0 8px; font-weight: 800;
+    letter-spacing: -1px;
+  }
+  .cover h2 {
+    font-size: 22px; font-weight: 400; opacity: .92; margin: 0 0 40px;
+    max-width: 30ch;
+  }
+  .cover .meta { margin-top: auto; font-size: 15px; opacity: .85; font-family: ui-sans-serif, system-ui, sans-serif; }
+  .cover .badge {
+    display: inline-block; font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase;
+    background: rgba(255,255,255,.16); padding: 6px 14px; border-radius: 999px;
+  }
+
+  h2.chap {
+    font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent); font-family: ui-sans-serif, system-ui, sans-serif;
+    margin: 0 0 6px;
+  }
+  h1.title { font-size: 36px; margin: 0 0 28px; letter-spacing: -.5px; }
+  h3 { font-size: 24px; margin: 40px 0 10px; letter-spacing: -.3px; }
+  h4 { font-size: 19px; margin: 28px 0 6px; color: var(--ink); }
+  p { margin: 0 0 16px; }
+  ul, ol { margin: 0 0 16px; padding-left: 26px; }
+  li { margin: 6px 0; }
+  a { color: var(--accent-dark); }
+
+  .lead { font-size: 21px; color: var(--muted); }
+
+  code {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 14.5px; background: #eef1f7; padding: 2px 6px; border-radius: 5px;
+    color: #2a3550;
+  }
+  pre {
+    background: var(--code-bg); color: var(--code-ink);
+    padding: 18px 20px; border-radius: 10px; overflow-x: auto;
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 14px; line-height: 1.55; margin: 0 0 18px;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+
+  .callout {
+    border-left: 4px solid var(--accent); background: #f0f5ff;
+    padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 0 0 18px;
+    font-size: 16.5px;
+  }
+  .callout.warn { border-color: var(--gold); background: #fff8e6; }
+  .callout .tag {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px;
+    letter-spacing: 1px; text-transform: uppercase; font-weight: 700;
+    color: var(--accent-dark); display: block; margin-bottom: 4px;
+  }
+  .callout.warn .tag { color: #a87b00; }
+
+  table { width: 100%; border-collapse: collapse; margin: 0 0 18px; font-size: 15.5px;
+          font-family: ui-sans-serif, system-ui, sans-serif; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { background: #f0f2f8; font-size: 13px; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); }
+  td code { font-size: 13px; }
+
+  /* Table of contents */
+  .toc ol { list-style: none; padding: 0; counter-reset: chap; }
+  .toc li {
+    counter-increment: chap; display: flex; align-items: baseline;
+    padding: 12px 0; border-bottom: 1px solid var(--line);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+  }
+  .toc li::before {
+    content: counter(chap, decimal-leading-zero);
+    color: var(--accent); font-weight: 700; width: 48px; flex: none; font-size: 15px;
+  }
+  .toc a { text-decoration: none; color: var(--ink); font-size: 17px; flex: 1; }
+  .toc .sub { color: var(--muted); font-size: 14px; display: block; }
+
+  .fignum { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; color: var(--muted); }
+
+  .divider { text-align: center; color: var(--gold); letter-spacing: 8px; margin: 36px 0; }
+
+  .pillrow { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; font-family: ui-sans-serif, system-ui, sans-serif; }
+  .pill { font-size: 13px; background: #eef1f7; color: #2a3550; padding: 5px 12px; border-radius: 999px; }
+
+  footer.bookfoot { text-align: center; color: var(--muted); font-size: 14px;
+    font-family: ui-sans-serif, system-ui, sans-serif; padding: 40px 0 60px; }
+
+  @media print {
+    body { background: #fff; font-size: 11.5pt; }
+    .page { box-shadow: none; max-width: none; margin: 0; padding: 0 0 24px; page-break-after: always; }
+    .cover { min-height: 92vh; }
+    pre { white-space: pre-wrap; }
+    a { color: var(--ink); text-decoration: none; }
+  }
+  @media (max-width: 640px) {
+    .page { padding: 40px 22px; }
+    .cover { padding: 56px 28px; }
+    .cover h1 { font-size: 38px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<section class="page cover">
+  <div class="stars">★★★★★</div>
+  <h1>The Google Reviews<br>Dashboard</h1>
+  <h2>Monitor your reputation and automate replies — a complete guide to building, running, and operating the app.</h2>
+  <div>
+    <span class="badge">Self-Hosted &nbsp;•&nbsp; FastAPI + React</span>
+  </div>
+  <div class="meta">
+    <p>A practical handbook &nbsp;·&nbsp; Edition 1.0 &nbsp;·&nbsp; 2026</p>
+  </div>
+</section>
+
+<!-- ============ TOC ============ -->
+<section class="page toc">
+  <h2 class="chap">Contents</h2>
+  <h1 class="title">What's inside</h1>
+  <ol>
+    <li><a href="#ch1">Why this app exists<span class="sub">The reputation problem and how automation solves it</span></a></li>
+    <li><a href="#ch2">How it works at a glance<span class="sub">Architecture, data flow, and the moving parts</span></a></li>
+    <li><a href="#ch3">Getting it running<span class="sub">Local dev, Docker, and Docker Compose</span></a></li>
+    <li><a href="#ch4">Connecting Google<span class="sub">Places API for reading, Business Profile for replying</span></a></li>
+    <li><a href="#ch5">The auto-reply machine<span class="sub">Templates, thresholds, and the polling job</span></a></li>
+    <li><a href="#ch6">Low-rating alerts<span class="sub">Catching unhappy customers before they leave</span></a></li>
+    <li><a href="#ch7">The API reference<span class="sub">Every endpoint, explained</span></a></li>
+    <li><a href="#ch8">Operating in production<span class="sub">Security, backups, and good habits</span></a></li>
+  </ol>
+</section>
+
+<!-- ============ CH 1 ============ -->
+<section class="page" id="ch1">
+  <h2 class="chap">Chapter One</h2>
+  <h1 class="title">Why this app exists</h1>
+  <p class="lead">Online reviews are the modern storefront window. People decide whether to walk in based on what they see — and they notice whether you respond.</p>
+  <p>Studies of consumer behavior consistently show two things: most customers read reviews before choosing a business, and a visible, timely reply from the owner increases trust even when the original review is critical. The hard part isn't caring — it's <em>keeping up</em>. Reviews arrive at unpredictable hours, the good ones deserve acknowledgement, and the bad ones need a fast, human response before they fester.</p>
+  <p>The Google Reviews Dashboard exists to close that gap. It is a small, self-hosted full-stack application that does three jobs well:</p>
+  <ul>
+    <li><strong>Watches</strong> your Google reviews and pulls them into one dashboard.</li>
+    <li><strong>Replies automatically</strong> to positive reviews using templates you control.</li>
+    <li><strong>Alerts you</strong> the moment a low-rating review needs a human touch.</li>
+  </ul>
+  <div class="callout">
+    <span class="tag">Design principle</span>
+    Automate the routine, escalate the exceptions. Five-star reviews get a warm template reply in seconds; one- to three-star reviews are flagged and emailed to a real person.
+  </div>
+  <h3>Who it's for</h3>
+  <p>Owners of single-location or small multi-location businesses, agencies managing reputation for clients, and developers who want a transparent, no-black-box reply system they can host themselves. There is no SaaS subscription and no third-party data sharing — you run it, you own the data.</p>
+  <h3>What makes it different</h3>
+  <div class="pillrow">
+    <span class="pill">No LLM dependency</span>
+    <span class="pill">Template-based replies</span>
+    <span class="pill">Self-hosted</span>
+    <span class="pill">SQLite — zero DB ops</span>
+    <span class="pill">Open API</span>
+  </div>
+  <p>Auto-replies use deterministic templates, not a language model. That means no per-message cost, no surprising AI output, and replies you can predict and approve in advance. Everything runs in a single container if you want it to, backed by a file-based SQLite database.</p>
+</section>
+
+<!-- ============ CH 2 ============ -->
+<section class="page" id="ch2">
+  <h2 class="chap">Chapter Two</h2>
+  <h1 class="title">How it works at a glance</h1>
+  <p class="lead">Two services, one database, one scheduled job. That's the whole machine.</p>
+  <h3>The two halves</h3>
+  <p>The <strong>backend</strong> is a FastAPI application with a SQLite database and an APScheduler-driven background job. The <strong>frontend</strong> is a React dashboard styled with Tailwind. In production they can be packaged into a single container, or run separately with Docker Compose.</p>
+<pre><code>├── backend/          # FastAPI + SQLite + APScheduler
+│   └── app/
+│       ├── routers/    # reviews, config, oauth endpoints
+│       ├── services/   # Google Places, GBP API, reply engine
+│       └── scheduler/  # poll + auto-reply job
+└── frontend/         # React + Tailwind dashboard
+    └── src/pages/    # Dashboard, Reviews, Settings</code></pre>
+
+  <h3>The data flow</h3>
+  <p>Every sync follows the same path, whether it's triggered by the scheduler or by hand:</p>
+  <ol>
+    <li><strong>Fetch.</strong> If Google Business Profile is connected, reviews come from there; otherwise the app falls back to the Places API.</li>
+    <li><strong>Upsert.</strong> Each review is matched by its external ID and inserted or updated. New reviews are counted.</li>
+    <li><strong>Reconcile existing replies.</strong> If Google already shows a reply, the local record is marked <code>posted</code> so the app never double-replies.</li>
+    <li><strong>Alert.</strong> Reviews rated 3 stars or below with no reply trigger a low-rating email alert.</li>
+    <li><strong>Auto-reply.</strong> Reviews at or above your threshold get a template reply, posted live if Google is connected or saved as <em>pending</em> if not.</li>
+  </ol>
+  <div class="callout">
+    <span class="tag">The golden rule</span>
+    A review is only ever acted on when its <code>reply_status</code> is <code>none</code>. Once it's <code>posted</code>, <code>pending</code>, or <code>failed</code>, the sync skips it. This is what keeps the job idempotent — you can run it as often as you like.
+  </div>
+
+  <h3>The technology, briefly</h3>
+  <table>
+    <tr><th>Layer</th><th>Choice</th><th>Why</th></tr>
+    <tr><td>API</td><td>FastAPI</td><td>Async, typed, auto-documented</td></tr>
+    <tr><td>Storage</td><td>SQLite</td><td>File-based, no server to operate</td></tr>
+    <tr><td>Scheduling</td><td>APScheduler</td><td>In-process polling, no extra service</td></tr>
+    <tr><td>UI</td><td>React + Tailwind</td><td>Fast dashboard, simple styling</td></tr>
+    <tr><td>Build</td><td>Vite</td><td>Quick dev server and bundling</td></tr>
+  </table>
+</section>
+
+<!-- ============ CH 3 ============ -->
+<section class="page" id="ch3">
+  <h2 class="chap">Chapter Three</h2>
+  <h1 class="title">Getting it running</h1>
+  <p class="lead">Three ways to start: bare-metal dev, a single container, or Compose. Pick the one that matches your moment.</p>
+
+  <h3>Local development</h3>
+  <p>Run the backend and frontend in two terminals. This gives you hot reload on both sides.</p>
+  <h4>Backend</h4>
+<pre><code>cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --host 127.0.0.1 --port 8011 --reload</code></pre>
+  <h4>Frontend</h4>
+<pre><code>cd frontend
+npm install
+npm run dev</code></pre>
+  <p>Then open <a href="http://127.0.0.1:5173">http://127.0.0.1:5173</a>. The Vite dev server proxies API calls to the backend on port 8011.</p>
+
+  <div class="divider">✦ ✦ ✦</div>
+
+  <h3>Single container (Docker)</h3>
+  <p>For a self-contained deployment, build the image and run it with a named volume so your database survives restarts.</p>
+<pre><code>docker build -t google-reviews .
+docker run -d \
+  --name google-reviews \
+  -p 127.0.0.1:8080:80 \
+  -v google-reviews-data:/app/data \
+  google-reviews</code></pre>
+  <p>Open <a href="http://127.0.0.1:8080">http://127.0.0.1:8080</a>. The container serves the built React app and proxies the API behind it.</p>
+  <div class="callout warn">
+    <span class="tag">Don't skip the volume</span>
+    Without <code>-v google-reviews-data:/app/data</code>, your reviews, replies, and settings live only inside the container and vanish when it's removed. The volume is your database.
+  </div>
+
+  <h3>Docker Compose (separate services)</h3>
+  <p>Compose runs the frontend and backend as distinct containers — closer to a scaled production layout.</p>
+<pre><code>cp .env.example .env   # fill in your keys
+docker compose up --build</code></pre>
+  <p>Copy the example environment file first and fill in any keys you want baked in. You can also enter everything later through the Settings page.</p>
+</section>
+
+<!-- ============ CH 4 ============ -->
+<section class="page" id="ch4">
+  <h2 class="chap">Chapter Four</h2>
+  <h1 class="title">Connecting Google</h1>
+  <p class="lead">There are two integrations, and they do different jobs. Reading reviews and replying to them are governed by separate Google APIs.</p>
+
+  <h3>Part one — Places API (reading)</h3>
+  <p>The Places API is the quickest way to start seeing reviews. It requires only an API key and a Place ID.</p>
+  <ol>
+    <li>Enable <strong>Places API</strong> in the <a href="https://console.cloud.google.com/">Google Cloud Console</a>.</li>
+    <li>Create an API key and paste it into <strong>Settings</strong>.</li>
+    <li>Find your <strong>Place ID</strong> with Google's <a href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder">Place ID Finder</a>.</li>
+  </ol>
+  <div class="callout warn">
+    <span class="tag">A real limitation</span>
+    The Places API returns only the <strong>5 most relevant</strong> reviews — not your full history, and you cannot post replies through it. For complete access and live replying, connect Google Business Profile below.
+  </div>
+
+  <h3>Part two — Business Profile (replying)</h3>
+  <p>To publish replies that actually appear on Google, connect the Google Business Profile (GBP) API via OAuth.</p>
+  <ol>
+    <li>Enable the <strong>Google Business Profile API</strong> in Cloud Console.</li>
+    <li>Create <strong>OAuth 2.0</strong> credentials of type <em>Web application</em>.</li>
+    <li>Add the redirect URI: <code>http://127.0.0.1:8011/api/oauth/callback</code></li>
+    <li>In Settings, enter your <strong>Client ID</strong>, <strong>Client Secret</strong>, <strong>Account ID</strong>, and <strong>Location ID</strong>.</li>
+    <li>Click <strong>Connect Google</strong> and complete the consent screen.</li>
+  </ol>
+  <div class="callout">
+    <span class="tag">Graceful degradation</span>
+    If GBP is not connected, the app still works. Replies are generated and saved locally with the status <strong>Pending publish</strong> — ready to go live the moment you connect.
+  </div>
+
+  <h3>How the app chooses a source</h3>
+  <p>At sync time the logic is simple and predictable: if GBP is configured, the app reads reviews from there; if that returns nothing (or GBP isn't set up), it falls back to the Places API. You get the richest source available without having to choose manually.</p>
+</section>
+
+<!-- ============ CH 5 ============ -->
+<section class="page" id="ch5">
+  <h2 class="chap">Chapter Five</h2>
+  <h1 class="title">The auto-reply machine</h1>
+  <p class="lead">This is the heart of the app: a deterministic engine that turns a star rating into the right reply, and a scheduler that keeps it running while you sleep.</p>
+
+  <h3>Templates by rating</h3>
+  <p>The engine picks a template based on the review's star count. Each is fully customizable in Settings, and three placeholders are filled in automatically.</p>
+  <table>
+    <tr><th>Rating</th><th>Default template</th></tr>
+    <tr><td>5 ★</td><td>Thank you so much, <code>{author_name}</code>! We're thrilled you had a great experience at <code>{business_name}</code>.</td></tr>
+    <tr><td>4 ★</td><td>Thanks for the kind words, <code>{author_name}</code>! We appreciate your feedback at <code>{business_name}</code>.</td></tr>
+    <tr><td>3 ★ &amp; below</td><td>Thank you for your feedback, <code>{author_name}</code>. We'd love to hear how we can improve at <code>{business_name}</code>.</td></tr>
+  </table>
+  <p>The available placeholders are <code>{author_name}</code>, <code>{rating}</code>, and <code>{business_name}</code>. Anything else in your template is passed through untouched.</p>
+
+  <h3>The threshold</h3>
+  <p>Auto-reply only fires when two conditions are met: the feature is enabled, and the review's rating is at or above your minimum (default <strong>4</strong>). Anything below the threshold is deliberately <em>not</em> auto-replied — it's left for a human, and flagged.</p>
+<pre><code>def should_auto_reply(rating: int) -> bool:
+    if auto_reply_enabled != "true":
+        return False
+    return rating >= auto_reply_min_rating   # default 4</code></pre>
+
+  <h3>Posting, or not</h3>
+  <p>Once a reply is generated, the engine attempts to post it to Google. The outcome decides the stored status:</p>
+  <table>
+    <tr><th>Situation</th><th>Stored status</th></tr>
+    <tr><td>Posted to Google successfully</td><td><code>posted</code></td></tr>
+    <tr><td>GBP configured but post failed</td><td><code>failed</code></td></tr>
+    <tr><td>GBP not connected</td><td><code>pending</code> (saved locally)</td></tr>
+  </table>
+
+  <h3>The scheduler</h3>
+  <p>An APScheduler job runs the whole sync-and-reply cycle on an interval you set (default <strong>every 4 hours</strong>, configurable from 1 to 168). You can also trigger it by hand at any time from the dashboard or via the API.</p>
+  <div class="callout">
+    <span class="tag">Why polling, not webhooks</span>
+    Polling keeps the system simple and self-contained — no public callback URL, no webhook registration, no inbound security surface. For review volumes typical of small businesses, a few-hour cadence is more than responsive enough.
+  </div>
+</section>
+
+<!-- ============ CH 6 ============ -->
+<section class="page" id="ch6">
+  <h2 class="chap">Chapter Six</h2>
+  <h1 class="title">Low-rating alerts</h1>
+  <p class="lead">The reviews that matter most are the ones the machine deliberately won't answer. Those get a human, fast.</p>
+  <p>When a review arrives rated <strong>3 stars or below</strong> and has no reply yet, the app sends an email alert so a real person can craft a thoughtful, personal response. This is the deliberate counterweight to automation: warmth where it's needed, speed where it isn't.</p>
+
+  <h3>What the alert contains</h3>
+  <ul>
+    <li>The star rating, rendered as ★ symbols</li>
+    <li>The reviewer's name</li>
+    <li>The full review text</li>
+    <li>A prompt to log in and reply manually</li>
+  </ul>
+
+  <h3>Setting it up</h3>
+  <p>Alerts are optional and require SMTP credentials. In Settings, provide:</p>
+  <table>
+    <tr><th>Field</th><th>Purpose</th></tr>
+    <tr><td><code>alert_email</code></td><td>Where alerts are sent</td></tr>
+    <tr><td><code>smtp_host</code></td><td>Mail server (default <code>smtp.gmail.com</code>)</td></tr>
+    <tr><td><code>smtp_user</code></td><td>SMTP username / from address</td></tr>
+    <tr><td><code>smtp_pass</code></td><td>SMTP password or app password</td></tr>
+  </table>
+  <div class="callout warn">
+    <span class="tag">Fails quietly by design</span>
+    If any SMTP field is missing, the alert is silently skipped — it never blocks a sync. And if sending throws an error, the job logs a warning and carries on. Reviews are still recorded; you just won't get that email.
+  </div>
+  <div class="callout">
+    <span class="tag">Gmail tip</span>
+    For Gmail, generate an <em>app password</em> rather than using your account password, and keep two-factor authentication on. The default port is 587 with STARTTLS.
+  </div>
+</section>
+
+<!-- ============ CH 7 ============ -->
+<section class="page" id="ch7">
+  <h2 class="chap">Chapter Seven</h2>
+  <h1 class="title">The API reference</h1>
+  <p class="lead">Everything the dashboard does, it does through this API — so anything the dashboard can do, your own scripts can do too.</p>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+    <tr><td>GET</td><td><code>/api/reviews/</code></td><td>List reviews</td></tr>
+    <tr><td>GET</td><td><code>/api/reviews/stats</code></td><td>Dashboard stats</td></tr>
+    <tr><td>POST</td><td><code>/api/reviews/sync</code></td><td>Fetch reviews + run auto-reply</td></tr>
+    <tr><td>POST</td><td><code>/api/reviews/{id}/reply</code></td><td>Post a manual reply</td></tr>
+    <tr><td>POST</td><td><code>/api/reviews/{id}/auto-reply</code></td><td>Generate a template reply</td></tr>
+    <tr><td>POST</td><td><code>/api/trigger-sync</code></td><td>Manually trigger the scheduler</td></tr>
+    <tr><td>GET</td><td><code>/api/oauth/connect</code></td><td>Start Google OAuth</td></tr>
+    <tr><td>GET / POST</td><td><code>/api/config/</code></td><td>Read or update settings</td></tr>
+  </table>
+
+  <h3>A typical sync response</h3>
+  <p>Calling <code>/api/reviews/sync</code> returns a summary of exactly what the run did:</p>
+<pre><code>{
+  "fetched": 5,
+  "new_reviews": 2,
+  "auto_replied": 1,
+  "alerts_sent": 1,
+  "pending_replies": 3
+}</code></pre>
+  <p>Each field tells a small story: how many reviews were pulled, how many were genuinely new, how many got an automatic reply, how many low-rating alerts went out, and how many reviews are still waiting on you.</p>
+
+  <h3>Manual replies</h3>
+  <p>A manual reply takes a single field, validated for length:</p>
+<pre><code>POST /api/reviews/42/reply
+{ "reply_text": "Thank you for visiting — see you again soon!" }</code></pre>
+  <p>Reply text must be between 1 and 4096 characters. If GBP is connected, it posts live; otherwise it's saved as pending, exactly like an auto-reply.</p>
+  <div class="callout">
+    <span class="tag">Interactive docs</span>
+    Because the backend is FastAPI, a full interactive OpenAPI explorer is available at <code>/docs</code> on the backend port. Try every endpoint from the browser without writing a line of code.
+  </div>
+</section>
+
+<!-- ============ CH 8 ============ -->
+<section class="page" id="ch8">
+  <h2 class="chap">Chapter Eight</h2>
+  <h1 class="title">Operating in production</h1>
+  <p class="lead">The app is simple, but reputation data and Google credentials are sensitive. A few habits keep it safe and reliable.</p>
+
+  <h3>Security</h3>
+  <ul>
+    <li><strong>No built-in auth.</strong> The app ships without authentication. Never expose it directly to the open internet — put it behind a reverse proxy with auth, a VPN, or bind it to localhost as the examples do (<code>127.0.0.1</code>).</li>
+    <li><strong>Protect the credentials.</strong> Your Places key, OAuth secret, and SMTP password live in the database and settings. Restrict who can reach the Settings page.</li>
+    <li><strong>Scope your API key.</strong> In Cloud Console, restrict the Places API key to the Places API and, where possible, to your server's IP.</li>
+  </ul>
+
+  <h3>Backups</h3>
+  <div class="callout warn">
+    <span class="tag">Your data is one file</span>
+    Everything — reviews, replies, settings, OAuth tokens — lives in the SQLite database under <code>/app/data</code>. Back up that volume regularly. Losing it means losing your reply history and reconnecting Google from scratch.
+  </div>
+
+  <h3>Good operating habits</h3>
+  <ul>
+    <li><strong>Approve your templates first.</strong> Because replies are deterministic, read them aloud before enabling auto-reply. Whatever you write is exactly what customers will see.</li>
+    <li><strong>Mind the threshold.</strong> Keeping the minimum at 4 means borderline 3-star reviews always reach a human — usually the right call.</li>
+    <li><strong>Watch the alert inbox.</strong> The system is only as good as your response to the alerts it sends. Treat a low-rating email as a same-day task.</li>
+    <li><strong>Tune the poll interval.</strong> Higher review volume warrants a shorter interval; a quiet location can poll less often to conserve API quota.</li>
+  </ul>
+
+  <div class="divider">✦ ✦ ✦</div>
+
+  <h3>In closing</h3>
+  <p>Reputation management doesn't have to be a daily grind or an expensive subscription. With a small, transparent app you control end to end, you can answer every happy customer instantly, never miss an unhappy one, and keep all of it on your own infrastructure. Automate the routine. Escalate the exceptions. Own your data.</p>
+  <p class="lead">Now go reply to some reviews.</p>
+</section>
+
+<footer class="bookfoot">
+  The Google Reviews Dashboard — A Complete Guide · Edition 1.0 · 2026<br>
+  Built on FastAPI, React, and SQLite · Self-hosted · Open API
+</footer>
+
+</body>
+</html>
