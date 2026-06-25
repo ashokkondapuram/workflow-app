@@ -1,0 +1,19 @@
+{
+  "id": "wf_security_incident",
+  "name": "Security Incident Response",
+  "description": "Detects login anomaly → locks account → notifies security team → logs incident → opens Jira ticket",
+  "category": "Security",
+  "nodes": [
+    {"id":"n1","type":"workflowNode","position":{"x":300,"y":50},"data":{"label":"Anomaly Detected","type":"trigger","config":{"method":"POST","path":"/security/alert"},"status":"idle"}},
+    {"id":"n2","type":"workflowNode","position":{"x":300,"y":160},"data":{"label":"Lock User Account","type":"action","config":{"url":"https://your-iam.com/lock","method":"POST"},"status":"idle"}},
+    {"id":"n3","type":"workflowNode","position":{"x":300,"y":270},"data":{"label":"Notify Security Team","type":"webhook","config":{"url":"https://hooks.slack.com/security","method":"POST","body":"{\"text\":\"🔒 Account locked - anomaly detected\"}"},"status":"idle"}},
+    {"id":"n4","type":"workflowNode","position":{"x":300,"y":380},"data":{"label":"Log Incident","type":"action","config":{"url":"https://your-siem.com/incidents","method":"POST"},"status":"idle"}},
+    {"id":"n5","type":"workflowNode","position":{"x":300,"y":490},"data":{"label":"Open Jira Ticket","type":"action","config":{"url":"https://your-jira.atlassian.net/rest/api/3/issue","method":"POST"},"status":"idle"}}
+  ],
+  "edges": [
+    {"id":"e1","source":"n1","target":"n2"},
+    {"id":"e2","source":"n2","target":"n3"},
+    {"id":"e3","source":"n3","target":"n4"},
+    {"id":"e4","source":"n4","target":"n5"}
+  ]
+}

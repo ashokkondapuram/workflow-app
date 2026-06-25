@@ -1,0 +1,21 @@
+{
+  "id": "wf_interview_scheduling",
+  "name": "Interview Scheduling Bot",
+  "description": "Candidate applies → HR gets notified → Calendar invite sent → Reminder 1hr before",
+  "category": "HR",
+  "nodes": [
+    {"id":"n1","type":"workflowNode","position":{"x":300,"y":50},"data":{"label":"Application Received","type":"trigger","config":{"method":"POST","path":"/apply"},"status":"idle"}},
+    {"id":"n2","type":"workflowNode","position":{"x":300,"y":160},"data":{"label":"Notify HR Team","type":"webhook","config":{"url":"https://hooks.slack.com/hr-channel","method":"POST","body":"{\"text\":\"New application received!\"}"},"status":"idle"}},
+    {"id":"n3","type":"workflowNode","position":{"x":300,"y":270},"data":{"label":"Create Calendar Event","type":"action","config":{"url":"https://www.googleapis.com/calendar/v3/calendars/primary/events","method":"POST"},"status":"idle"}},
+    {"id":"n4","type":"workflowNode","position":{"x":300,"y":380},"data":{"label":"Send Confirmation Email","type":"webhook","config":{"url":"https://your-mail.com/send","method":"POST","body":"{\"template\":\"interview_confirmation\"}"},"status":"idle"}},
+    {"id":"n5","type":"workflowNode","position":{"x":300,"y":490},"data":{"label":"Wait Until 1hr Before","type":"delay","config":{"duration":"23","unit":"hours"},"status":"idle"}},
+    {"id":"n6","type":"workflowNode","position":{"x":300,"y":600},"data":{"label":"Send Reminder","type":"webhook","config":{"url":"https://your-mail.com/send","method":"POST","body":"{\"template\":\"interview_reminder\"}"},"status":"idle"}}
+  ],
+  "edges": [
+    {"id":"e1","source":"n1","target":"n2"},
+    {"id":"e2","source":"n2","target":"n3"},
+    {"id":"e3","source":"n3","target":"n4"},
+    {"id":"e4","source":"n4","target":"n5"},
+    {"id":"e5","source":"n5","target":"n6"}
+  ]
+}

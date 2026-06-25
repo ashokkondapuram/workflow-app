@@ -1,0 +1,21 @@
+{
+  "id": "wf_subscription_billing",
+  "name": "Subscription Billing Retry",
+  "description": "Failed payment triggers 3 retry attempts with delays, then downgrades account and notifies user",
+  "category": "Finance",
+  "nodes": [
+    {"id":"n1","type":"workflowNode","position":{"x":300,"y":50},"data":{"label":"Payment Failed","type":"trigger","config":{"method":"POST","path":"/billing/failed"},"status":"idle"}},
+    {"id":"n2","type":"workflowNode","position":{"x":300,"y":160},"data":{"label":"Wait 24 Hours","type":"delay","config":{"duration":"24","unit":"hours"},"status":"idle"}},
+    {"id":"n3","type":"workflowNode","position":{"x":300,"y":270},"data":{"label":"Retry Payment","type":"action","config":{"url":"https://your-billing.com/retry","method":"POST"},"status":"idle"}},
+    {"id":"n4","type":"workflowNode","position":{"x":300,"y":380},"data":{"label":"Retry Succeeded?","type":"condition","config":{"field":"status","operator":"equals","value":"success"},"status":"idle"}},
+    {"id":"n5","type":"workflowNode","position":{"x":150,"y":490},"data":{"label":"Restore Account","type":"action","config":{"url":"https://your-billing.com/restore","method":"POST"},"status":"idle"}},
+    {"id":"n6","type":"workflowNode","position":{"x":450,"y":490},"data":{"label":"Downgrade & Notify","type":"webhook","config":{"url":"https://your-mail.com/send","method":"POST","body":"{\"template\":\"payment_failed_final\"}"},"status":"idle"}}
+  ],
+  "edges": [
+    {"id":"e1","source":"n1","target":"n2"},
+    {"id":"e2","source":"n2","target":"n3"},
+    {"id":"e3","source":"n3","target":"n4"},
+    {"id":"e4","source":"n4","target":"n5","label":"Yes"},
+    {"id":"e5","source":"n4","target":"n6","label":"No"}
+  ]
+}

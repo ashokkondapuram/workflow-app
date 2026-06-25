@@ -1,0 +1,19 @@
+{
+  "id": "wf_product_restock",
+  "name": "Low Inventory Restock Alert",
+  "description": "Checks stock levels daily, auto-creates PO for low items, alerts procurement team",
+  "category": "Operations",
+  "nodes": [
+    {"id":"n1","type":"workflowNode","position":{"x":300,"y":50},"data":{"label":"Daily Inventory Check","type":"trigger","config":{"method":"SCHEDULE","cron":"0 7 * * *"},"status":"idle"}},
+    {"id":"n2","type":"workflowNode","position":{"x":300,"y":160},"data":{"label":"Fetch Stock Levels","type":"action","config":{"url":"https://your-erp.com/inventory/levels","method":"GET"},"status":"idle"}},
+    {"id":"n3","type":"workflowNode","position":{"x":300,"y":270},"data":{"label":"Stock < Threshold?","type":"condition","config":{"field":"quantity","operator":"lt","value":"50"},"status":"idle"}},
+    {"id":"n4","type":"workflowNode","position":{"x":300,"y":380},"data":{"label":"Create Purchase Order","type":"action","config":{"url":"https://your-erp.com/po/create","method":"POST"},"status":"idle"}},
+    {"id":"n5","type":"workflowNode","position":{"x":300,"y":490},"data":{"label":"Alert Procurement","type":"webhook","config":{"url":"https://hooks.slack.com/procurement","method":"POST","body":"{\"text\":\"📦 PO created for low-stock items\"}"},"status":"idle"}}
+  ],
+  "edges": [
+    {"id":"e1","source":"n1","target":"n2"},
+    {"id":"e2","source":"n2","target":"n3"},
+    {"id":"e3","source":"n3","target":"n4","label":"Yes"},
+    {"id":"e4","source":"n4","target":"n5"}
+  ]
+}
