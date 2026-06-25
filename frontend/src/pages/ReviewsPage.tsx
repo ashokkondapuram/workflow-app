@@ -1,25 +1,27 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Bot, Send } from "lucide-react";
-import { getReviews, postReply, triggerAutoReply } from "../api";
+import { Bot, Brain, Send, MessageSquare, Sparkles } from "lucide-react";
+import { aiSuggestReply, analyzeReview, getReviews, postReply } from "../api";
 import { Review } from "../types";
+import { Stars } from "../components/Stars";
+import { AiInsightCard, SentimentBadge, UrgencyDot } from "../components/AiBadge";
+import { PageHeader, Toast, EmptyState } from "../components/PageHeader";
 
-function Stars({ rating }: { rating: number }) {
-  return (
-    <span className="text-yellow-400">
-      {"★".repeat(rating)}
-      <span className="text-gray-600">{"★".repeat(5 - rating)}</span>
-    </span>
-  );
-}
+const filters = [
+  { id: "all", label: "All" },
+  { id: "pending", label: "Needs reply" },
+  { id: "replied", label: "Replied" },
+  { id: "low", label: "Low rating" },
+];
 
 export default function ReviewsPage() {
   const [searchParams] = useSearchParams();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [filter, setFilter] = useState(searchParams.get("filter") || "all");
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
+  const [msgType, setMsgType] = useState<"success" | "error">("success");
 
   const load = () => getReviews().then(setReviews);
 
@@ -31,147 +33,180 @@ export default function ReviewsPage() {
     if (filter === "pending") return r.reply_status === "none";
     if (filter === "replied") return r.reply_status === "posted";
     if (filter === "low") return r.rating <= 3;
-    if (filter === "auto") return r.auto_replied;
     return true;
   });
+
+  const setLoad = (id: string, action: string | null) =>
+    setLoading((s) => {
+      const next = { ...s };
+      if (action) next[id] = action;
+      else delete next[id];
+      return next;
+    });
 
   const handleReply = async (id: string) => {
     const text = replyDrafts[id]?.trim();
     if (!text) return;
-    setLoading((s) => ({ ...s, [id]: true }));
+    setLoad(id, "send");
     try {
       await postReply(id, text);
+      setMsgType("success");
       setMsg("Reply sent.");
       load();
     } catch {
+      setMsgType("error");
       setMsg("Failed to send reply.");
     }
-    setLoading((s) => ({ ...s, [id]: false }));
+    setLoad(id, null);
     setTimeout(() => setMsg(""), 3000);
   };
 
-  const handleAutoReply = async (id: string) => {
-    setLoading((s) => ({ ...s, [id]: true }));
+  const handleAiReply = async (id: string) => {
+    setLoad(id, "ai");
     try {
-      const result = await triggerAutoReply(id);
+      const result = await aiSuggestReply(id);
       setReplyDrafts((d) => ({ ...d, [id]: result.reply_text }));
-      setMsg(result.posted_to_google ? "Auto-reply published to Google." : "Reply saved — connect GBP to publish.");
+      setMsgType("success");
+      setMsg("AI reply ready — review and send.");
       load();
     } catch {
-      setMsg("Auto-reply failed.");
+      setMsgType("error");
+      setMsg("AI failed. Add your OpenAI key in Connect.");
     }
-    setLoading((s) => ({ ...s, [id]: false }));
+    setLoad(id, null);
     setTimeout(() => setMsg(""), 4000);
   };
 
-  const filters = [
-    { id: "all", label: "All" },
-    { id: "pending", label: "Needs reply" },
-    { id: "replied", label: "Replied" },
-    { id: "low", label: "Low rating" },
-    { id: "auto", label: "Auto-replied" },
-  ];
+  const handleAnalyze = async (id: string) => {
+    setLoad(id, "analyze");
+    try {
+      await analyzeReview(id);
+      setMsgType("success");
+      setMsg("Review analyzed.");
+      load();
+    } catch {
+      setMsgType("error");
+      setMsg("Analysis failed. Connect OpenAI first.");
+    }
+    setLoad(id, null);
+    setTimeout(() => setMsg(""), 3000);
+  };
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Reviews</h2>
-          <p className="text-gray-400 text-sm mt-1">{filtered.length} review{filtered.length !== 1 ? "s" : ""}</p>
-        </div>
-        <div className="flex gap-2">
-          {filters.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => setFilter(f.id)}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                filter === f.id
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-800 text-gray-400 hover:text-white"
-              }`}
-            >
-              {f.label}
-            </button>
+    <>
+      <PageHeader
+        title="Reviews"
+        subtitle={`${filtered.length} review${filtered.length !== 1 ? "s" : ""}`}
+        action={
+          <div className="flex gap-1.5 p-1 bg-white/[0.04] rounded-xl border border-white/[0.06]">
+            {filters.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  filter === f.id ? "bg-indigo-500 text-white shadow-sm" : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        }
+      />
+
+      {msg && <Toast message={msg} type={msgType} />}
+
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon={<MessageSquare size={24} />}
+          title="No reviews here"
+          description="Try a different filter, or sync reviews from Overview."
+        />
+      ) : (
+        <div className="space-y-4">
+          {filtered.map((r) => (
+            <article key={r.id} className="card p-5">
+              <div className="flex items-start gap-4">
+                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500/25 to-violet-500/15 flex items-center justify-center text-sm font-semibold text-indigo-200 shrink-0">
+                  {r.author_name.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-white font-medium">{r.author_name}</span>
+                      <Stars rating={r.rating} size="md" />
+                      <SentimentBadge sentiment={r.ai_sentiment} />
+                      <UrgencyDot urgency={r.ai_urgency} />
+                      {r.auto_replied && (
+                        <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Bot size={10} /> Auto
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-zinc-600 text-xs shrink-0">{r.relative_time}</span>
+                  </div>
+
+                  <p className="text-zinc-300 text-sm leading-relaxed">
+                    {r.text || <span className="text-zinc-600 italic">No comment</span>}
+                  </p>
+
+                  <AiInsightCard
+                    summary={r.ai_summary}
+                    action={r.ai_action}
+                    themes={r.ai_themes_list}
+                  />
+
+                  {!r.ai_sentiment && (
+                    <button
+                      onClick={() => handleAnalyze(r.id)}
+                      disabled={!!loading[r.id]}
+                      className="mt-3 text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1"
+                    >
+                      <Brain size={12} />
+                      {loading[r.id] === "analyze" ? "Analyzing…" : "Analyze with AI"}
+                    </button>
+                  )}
+
+                  {r.reply_text ? (
+                    <div className="bg-indigo-500/5 border border-indigo-500/15 rounded-xl p-4 mt-4">
+                      <p className="text-[11px] text-indigo-400 font-medium mb-1.5 uppercase tracking-wide">Your reply</p>
+                      <p className="text-zinc-300 text-sm">{r.reply_text}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 mt-4">
+                      <textarea
+                        value={replyDrafts[r.id] || ""}
+                        onChange={(e) => setReplyDrafts((d) => ({ ...d, [r.id]: e.target.value }))}
+                        placeholder="Write a reply…"
+                        rows={2}
+                        className="input resize-none"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => handleReply(r.id)}
+                          disabled={!!loading[r.id] || !replyDrafts[r.id]?.trim()}
+                          className="btn-primary py-2 text-xs"
+                        >
+                          <Send size={14} />
+                          {loading[r.id] === "send" ? "Sending…" : "Send reply"}
+                        </button>
+                        <button
+                          onClick={() => handleAiReply(r.id)}
+                          disabled={!!loading[r.id]}
+                          className="btn-secondary py-2 text-xs border-violet-500/20 text-violet-300 hover:bg-violet-500/10"
+                        >
+                          <Sparkles size={14} />
+                          {loading[r.id] === "ai" ? "Thinking…" : "AI write reply"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </article>
           ))}
         </div>
-      </div>
-
-      {msg && (
-        <div className="mb-4 px-4 py-2 bg-green-900 border border-green-600 rounded-lg text-sm text-green-200">
-          {msg}
-        </div>
       )}
-
-      <div className="space-y-4">
-        {filtered.length === 0 ? (
-          <div className="text-center text-gray-500 py-12">No reviews match this filter.</div>
-        ) : (
-          filtered.map((r) => (
-            <div key={r.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-              <div className="flex items-start justify-between gap-4 mb-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-white font-semibold">{r.author_name}</span>
-                    <Stars rating={r.rating} />
-                    {r.auto_replied && (
-                      <span className="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Bot size={12} /> Auto-replied
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-gray-500 text-xs">{r.relative_time}</p>
-                </div>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
-                    r.reply_status === "posted"
-                      ? "bg-green-900 text-green-300"
-                      : r.reply_status === "failed"
-                        ? "bg-red-900 text-red-300"
-                        : "bg-gray-800 text-gray-400"
-                  }`}
-                >
-                  {r.reply_status === "posted" ? "Replied" : r.reply_status === "none" ? "No reply" : r.reply_status}
-                </span>
-              </div>
-
-              <p className="text-gray-300 text-sm mb-4">{r.text || <em className="text-gray-500">No comment</em>}</p>
-
-              {r.reply_text ? (
-                <div className="bg-gray-800 rounded-lg p-3 text-sm text-gray-300 border-l-2 border-blue-500">
-                  <p className="text-xs text-gray-500 mb-1">Your reply</p>
-                  {r.reply_text}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <textarea
-                    value={replyDrafts[r.id] || ""}
-                    onChange={(e) => setReplyDrafts((d) => ({ ...d, [r.id]: e.target.value }))}
-                    placeholder="Write a reply..."
-                    rows={3}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-none"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleReply(r.id)}
-                      disabled={loading[r.id] || !replyDrafts[r.id]?.trim()}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg text-sm font-medium"
-                    >
-                      <Send size={14} /> Send reply
-                    </button>
-                    <button
-                      onClick={() => handleAutoReply(r.id)}
-                      disabled={loading[r.id]}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 rounded-lg text-sm"
-                    >
-                      <Bot size={14} /> Generate auto-reply
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+    </>
   );
 }

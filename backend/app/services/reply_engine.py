@@ -2,7 +2,7 @@ import smtplib
 from email.mime.text import MIMEText
 
 from app import database as db
-from app.services import google_business
+from app.services import google_business, openai_service
 
 
 def render_template(template: str, review: dict) -> str:
@@ -67,8 +67,26 @@ def send_low_rating_alert(review: dict):
         server.sendmail(smtp_user, [alert_email], msg.as_string())
 
 
+async def generate_reply_text(review: dict, prefer_ai: bool = False) -> str:
+    if prefer_ai and openai_service.is_ai_configured():
+        try:
+            enriched = review
+            if not review.get("ai_sentiment"):
+                enriched = await openai_service.analyze_review(review)
+            return await openai_service.generate_ai_reply(enriched, enriched)
+        except Exception:
+            pass
+    return render_template(get_template_for_rating(review["rating"]), review)
+
+
 async def generate_and_post_reply(review: dict, reply_text: str | None = None, auto: bool = False) -> dict:
-    text = reply_text or render_template(get_template_for_rating(review["rating"]), review)
+    if reply_text:
+        text = reply_text
+    elif auto:
+        use_ai = db.get_config("ai_auto_reply", "false") == "true"
+        text = await generate_reply_text(review, prefer_ai=use_ai)
+    else:
+        text = render_template(get_template_for_rating(review["rating"]), review)
     gbp_review_name = review.get("gbp_review_name") or review.get("external_id", "")
     result = await google_business.post_review_reply(gbp_review_name, text)
 

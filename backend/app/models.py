@@ -31,3 +31,9 @@ class ReviewConfig(BaseModel):
         "Thank you for your feedback, {author_name}. We'd love to hear how we can improve at {business_name}."
     )
     poll_interval_hours: int = Field(default=4, ge=1, le=168)
+    openai_api_key: str = ""
+    ai_enabled: bool = True
+    ai_model: str = "gpt-4o-mini"
+    ai_tone: str = "friendly"
+    ai_auto_analyze: bool = True
+    ai_auto_reply: bool = False

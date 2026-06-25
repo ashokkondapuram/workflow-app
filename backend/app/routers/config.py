@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from app import database as db
 from app.models import ReviewConfig
-from app.services import google_business
+from app.services import google_business, openai_service
 
 router = APIRouter(prefix="/api/config", tags=["config"])
 
@@ -72,6 +72,17 @@ async def get_config():
         "poll_interval_hours": int(db.get_config("poll_interval_hours", "4")),
         "gbp_connected": google_business.is_gbp_configured(),
         "oauth_connected": db.is_oauth_connected(),
+        "places_connected": bool(
+            db.get_config("google_places_api_key") and db.get_config("place_id")
+        ),
+        "can_publish_replies": google_business.is_gbp_configured(),
+        "ai_connected": openai_service.is_ai_configured(),
+        "openai_api_key": _mask_secret(db.get_config("openai_api_key")),
+        "ai_enabled": db.get_config("ai_enabled", "true") == "true",
+        "ai_model": db.get_config("ai_model", "gpt-4o-mini"),
+        "ai_tone": db.get_config("ai_tone", "friendly"),
+        "ai_auto_analyze": db.get_config("ai_auto_analyze", "true") == "true",
+        "ai_auto_reply": db.get_config("ai_auto_reply", "false") == "true",
     }
 
 
@@ -97,14 +108,20 @@ async def save_config(cfg: ReviewConfig):
         "template_4_star": cfg.template_4_star,
         "template_3_star": cfg.template_3_star,
         "poll_interval_hours": str(cfg.poll_interval_hours),
+        "openai_api_key": cfg.openai_api_key,
+        "ai_enabled": str(cfg.ai_enabled).lower(),
+        "ai_model": cfg.ai_model,
+        "ai_tone": cfg.ai_tone,
+        "ai_auto_analyze": str(cfg.ai_auto_analyze).lower(),
+        "ai_auto_reply": str(cfg.ai_auto_reply).lower(),
     }
 
+    secret_keys = ("google_places_api_key", "google_client_id", "google_client_secret", "smtp_pass", "openai_api_key")
     for key, value in values.items():
-        if "••••" in value:
+        if isinstance(value, str) and "••••" in value:
             continue
-        if key in ("google_places_api_key", "google_client_id", "google_client_secret", "smtp_pass"):
-            if not value:
-                continue
-        db.set_config(key, value)
+        if key in secret_keys and not value:
+            continue
+        db.set_config(key, str(value))
 
     return {"message": "Settings saved"}

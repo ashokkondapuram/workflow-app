@@ -1,7 +1,7 @@
 import logging
 
 from app import database as db
-from app.services import google_business, google_places, reply_engine
+from app.services import google_business, google_places, openai_service, reply_engine
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,13 @@ async def sync_and_auto_reply() -> dict:
         review = db.upsert_review(raw)
         if not existing:
             new_reviews += 1
+
+        if not review.get("ai_sentiment") and openai_service.is_ai_configured():
+            if db.get_config("ai_auto_analyze", "true") == "true":
+                try:
+                    review = await openai_service.analyze_review(review)
+                except Exception as exc:
+                    logger.warning("AI analyze failed: %s", exc)
 
         if raw.get("existing_reply") and review["reply_status"] == "none":
             db.update_review_reply(review["id"], raw["existing_reply"], "posted", auto_replied=False)

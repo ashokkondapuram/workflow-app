@@ -11,6 +11,13 @@ export interface Review {
   auto_replied: boolean;
   fetched_at: string;
   replied_at: string;
+  ai_sentiment?: string;
+  ai_summary?: string;
+  ai_themes?: string;
+  ai_themes_list?: string[];
+  ai_urgency?: string;
+  ai_action?: string;
+  ai_analyzed_at?: string;
 }
 
 export interface ReviewStats {
@@ -19,6 +26,20 @@ export interface ReviewStats {
   pending_replies: number;
   auto_replies_sent: number;
   low_rating_count: number;
+}
+
+export interface ReviewInsights {
+  sentiment_breakdown: { positive: number; neutral: number; negative: number };
+  top_themes: { theme: string; count: number }[];
+  needs_attention: {
+    id: string;
+    author_name: string;
+    rating: number;
+    summary: string;
+    urgency: string;
+  }[];
+  ai_summary: string;
+  analyzed_count: number;
 }
 
 export interface ReviewConfig {
@@ -43,4 +64,13 @@ export interface ReviewConfig {
   poll_interval_hours: number;
   gbp_connected: boolean;
   oauth_connected: boolean;
+  places_connected: boolean;
+  can_publish_replies: boolean;
+  ai_connected: boolean;
+  openai_api_key: string;
+  ai_enabled: boolean;
+  ai_model: string;
+  ai_tone: string;
+  ai_auto_analyze: boolean;
+  ai_auto_reply: boolean;
 }

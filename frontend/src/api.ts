@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Review, ReviewConfig, ReviewStats } from "./types";
+import { Review, ReviewConfig, ReviewInsights, ReviewStats } from "./types";
 
 const api = axios.create({ baseURL: "/api" });
 
@@ -8,6 +8,18 @@ export const getReviews = (params?: { rating?: number; status?: string }) =>
 
 export const getReviewStats = () =>
   api.get<ReviewStats>("/reviews/stats").then((r) => r.data);
+
+export const getInsights = () =>
+  api.get<ReviewInsights>("/reviews/insights").then((r) => r.data);
+
+export const analyzeAllReviews = () =>
+  api.post("/reviews/analyze-all").then((r) => r.data);
+
+export const analyzeReview = (id: string) =>
+  api.post<Review>(`/reviews/${id}/analyze`).then((r) => r.data);
+
+export const aiSuggestReply = (id: string) =>
+  api.post<{ reply_text: string; analysis: Record<string, unknown> }>(`/reviews/${id}/ai-reply`).then((r) => r.data);
 
 export const syncReviews = () =>
   api.post("/reviews/sync").then((r) => r.data);
@@ -26,9 +38,6 @@ export const saveConfig = (cfg: Partial<ReviewConfig>) =>
 
 export const triggerSync = () =>
   api.post("/trigger-sync").then((r) => r.data);
-
-export const getOAuthStatus = () =>
-  api.get<{ connected: boolean; redirect_uri: string }>("/oauth/status").then((r) => r.data);
 
 export const disconnectOAuth = () =>
   api.post("/oauth/disconnect").then((r) => r.data);

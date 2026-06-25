@@ -48,11 +48,32 @@ def init_db():
             )
         """)
         conn.commit()
+        _migrate_reviews(conn)
+
+
+def _migrate_reviews(conn):
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(reviews)").fetchall()}
+    migrations = [
+        ("ai_sentiment", "TEXT DEFAULT ''"),
+        ("ai_summary", "TEXT DEFAULT ''"),
+        ("ai_themes", "TEXT DEFAULT '[]'"),
+        ("ai_urgency", "TEXT DEFAULT ''"),
+        ("ai_action", "TEXT DEFAULT ''"),
+        ("ai_analyzed_at", "TEXT DEFAULT ''"),
+    ]
+    for name, typedef in migrations:
+        if name not in cols:
+            conn.execute(f"ALTER TABLE reviews ADD COLUMN {name} {typedef}")
+    conn.commit()
 
 
 def row_to_dict(row):
     d = dict(row)
     d["auto_replied"] = bool(d.get("auto_replied", 0))
+    try:
+        d["ai_themes_list"] = json.loads(d.get("ai_themes") or "[]")
+    except (json.JSONDecodeError, TypeError):
+        d["ai_themes_list"] = []
     return d
 
 
@@ -122,6 +143,26 @@ def get_reviews_needing_reply(min_rating: int) -> list:
             ORDER BY review_time DESC
         """, (min_rating,)).fetchall()
     return [row_to_dict(r) for r in rows]
+
+
+def update_review_ai(review_id: str, analysis: dict):
+    with get_conn() as conn:
+        conn.execute("""
+            UPDATE reviews SET
+                ai_sentiment=?, ai_summary=?, ai_themes=?,
+                ai_urgency=?, ai_action=?, ai_analyzed_at=?
+            WHERE id=?
+        """, (
+            analysis.get("ai_sentiment", ""),
+            analysis.get("ai_summary", ""),
+            analysis.get("ai_themes", "[]"),
+            analysis.get("ai_urgency", ""),
+            analysis.get("ai_action", ""),
+            datetime.utcnow().isoformat(),
+            review_id,
+        ))
+        conn.commit()
+    return get_review(review_id)
 
 
 def update_review_reply(review_id: str, reply_text: str, status: str, auto_replied: bool = False):
